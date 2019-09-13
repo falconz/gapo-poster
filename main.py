@@ -26,7 +26,7 @@ class GapoPoster:
 	
 	def checkPost(self,userInfo):
 		url = self.listPost+str(userInfo['user']['id'])
-		response = requests.get(url, headers={"Authorization":"Bearer "+userInfo['token']},verify=False)
+		response = requests.get(url, headers={"Authorization":"Bearer "+userInfo['token']}, verify=False)
 		if(response.status_code == 200):
 			data = json_data = json.loads(response.text)
 			return data
@@ -35,7 +35,7 @@ class GapoPoster:
 		
 	
 	def loginGapo(self,username,password):
-		response = requests.post(self.loginURL, files={'phone': (None, username), 'password': (None, password)},verify=False)
+		response = requests.post(self.loginURL, files={'phone': (None, username), 'password': (None, password)}, verify=False)
 		if(response.status_code == 200):
 			data = json_data = json.loads(response.text)
 			return data
@@ -44,7 +44,7 @@ class GapoPoster:
 			
 	def postThread(self,userInfo):
 		content = self.genContent()
-		response = requests.post(self.postURL, files={'content': (None, content), 'privacy': (None, 1), 'data_source': (None, 1)},headers={"Authorization":"Bearer "+userInfo['token']},verify=False)
+		response = requests.post(self.postURL, files={'content': (None, content), 'privacy': (None, 1), 'data_source': (None, 1)},headers={"Authorization":"Bearer "+userInfo['token']}, verify=False)
 		if(response.status_code == 200):
 			data = json_data = json.loads(response.text)
 			return data
@@ -55,6 +55,7 @@ class GapoPoster:
 		f = self.random_line('contents.txt')
 		f = f+ self.random_line('contents.txt')
 		f = f+ self.random_line('contents.txt')
+		f = f+ "\r\n"+"#Ger"
 		return f
 		
 	def random_line(self,afile):
@@ -72,30 +73,32 @@ if __name__ == "__main__":
 	f = parser.parse_args()
 	gapoClass = GapoPoster()
 	while True:
-		for user in open(f.users, 'r'):
-			user = user.replace(" ", "")
-			user = user.split("|")
-			userInfo = gapoClass.loginGapo(user[0].rstrip(),user[1].rstrip())
-			if(userInfo != False):
-				post = gapoClass.checkPost(userInfo)
-				if(len(post) > 0):
-					postinDay = 0
-					if(len(post)<3):
-						rangepost = len(post)
+		try:
+			for user in open(f.users, 'r'):
+				user = user.replace(" ", "")
+				user = user.split("|")
+				userInfo = gapoClass.loginGapo(user[0].rstrip(),user[1].rstrip())
+				if(userInfo != False):
+					post = gapoClass.checkPost(userInfo)
+					if(len(post) > 0):
+						postinDay = 0
+						if(len(post)<3):
+							rangepost = len(post)
+						else:
+							rangepost = 3
+						for i in range(rangepost):
+							current = time.time() 
+							subtime = current - post[i]['create_time']
+							if(subtime <= 86400):
+								postinDay = postinDay +1
+						if(postinDay < 3):
+							print("Posting user:"+user[0].rstrip())
+							gapoClass.postThread(userInfo)
 					else:
-						rangepost = 3
-					for i in range(rangepost):
-						current = time.time() 
-						subtime = current - post[i]['create_time']
-						if(subtime <= 86400):
-							postinDay = postinDay +1
-					if(postinDay < 3):
 						print("Posting user:"+user[0].rstrip())
 						gapoClass.postThread(userInfo)
 				else:
-					print("Posting user:"+user[0].rstrip())
-					gapoClass.postThread(userInfo)
-			else:
-				print("Username or password invalid:" + user[0].rstrip() +"|"+user[1].rstrip())
-		time.sleep(2)
-			
+					print("Username or password invalid:" + user[0].rstrip() +"|"+user[1].rstrip())
+			time.sleep(30)
+		except Exception:
+			pass
